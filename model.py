@@ -1,56 +1,55 @@
-import json
-import random
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.naive_bayes import MultinomialNB
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+from Body.Speak import SPEAK
 
-# Load the JSON data
-with open(r'C:\Users\vlogp\Desktop\AI Project\Brain\jarvis.json') as file:
-    data = json.load(file)
 
-# Extract training data
-training_data = []
-for intent in data.get('intents', []):
-    if 'patterns' in intent:
-        for pattern in intent['patterns']:
-            training_data.append((pattern, intent['tag']))
-    else:
-        print(f"Warning: 'patterns' key is missing in intent: {intent}")
+# Load your Q&A dataset from a text file
+def load_dataset(file_path):
+    with open(file_path, 'r', encoding='utf-8') as file:
+        lines = file.readlines()
+        qna_pairs = [line.strip().split(':') for line in lines if ':' in line]
+        dataset = [{'question': q, 'answer': a} for q, a in qna_pairs]
+    return dataset
 
-# Check if training_data is empty
-if not training_data:
-    print("Error: No training data found.")
-else:
-    # Prepare features and labels
-    X, y = zip(*training_data)
 
-    # Convert text data to numerical format
-    vectorizer = CountVectorizer()
-    X = vectorizer.fit_transform(X)
+# Preprocess the text
+def preprocess_text(text):
+    stop_words = set(stopwords.words('english'))
+    ps = PorterStemmer()
+    tokens = word_tokenize(text.lower())
+    tokens = [ps.stem(token) for token in tokens if token.isalnum() and token not in stop_words]
+    return ' '.join(tokens)
 
-    # Train a naive Bayes classifier
-    classifier = MultinomialNB()
-    classifier.fit(X, y)
+# Train the TF-IDF vectorizer
+def train_tfidf_vectorizer(dataset):
+    corpus = [preprocess_text(qa['question']) for qa in dataset]
+    vectorizer = TfidfVectorizer()
+    X = vectorizer.fit_transform(corpus)
+    return vectorizer, X
 
-    def get_response(user_input):
-        # Convert user input to numerical format
-        user_input_vectorized = vectorizer.transform([user_input])
+# Retrieve the most relevant answer
+def get_answer(question, vectorizer, X, dataset):
+    question = preprocess_text(question)
+    question_vec = vectorizer.transform([question])
+    similarities = cosine_similarity(question_vec, X)
+    best_match_index = similarities.argmax()
+    return dataset[best_match_index]['answer']
 
-        # Predict the intent
-        predicted_intent = classifier.predict(user_input_vectorized)[0]
+# Main function
+def mind(text):
+    # Replace 'your_dataset.txt' with the path to your Q&A dataset
+    dataset_path = r'C:\Users\vlogp\Desktop\Jarvis Ai\Data\text\qna_Data.txt'
+    dataset = load_dataset(dataset_path)
 
-        # Get a random response for the predicted intent
-        for intent in data.get('intents', []):
-            if intent.get('tag') == predicted_intent:
-                responses = intent.get('responses', [])
-                if responses:
-                    return random.choice(responses)
-                else:
-                    return "I'm sorry, I don't have a response for that."
-
-    # Example usage
+    vectorizer, X = train_tfidf_vectorizer(dataset)
+    user_question = text
+    answer = get_answer(user_question, vectorizer, X, dataset)
+    SPEAK(answer)
 
 while True:
-    user_input = input("User: ")
-    response = get_response(user_input)
-    print("Bot:", response)
-
+    x = input()
+    mind(x)
