@@ -4,7 +4,7 @@ from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-from Body.Speak import SPEAK
+from Head.Mouth import speak
 
 
 # Load your Q&A dataset from a text file
@@ -42,14 +42,10 @@ def get_answer(question, vectorizer, X, dataset):
 # Main function
 def mind(text):
     # Replace 'your_dataset.txt' with the path to your Q&A dataset
-    dataset_path = r'C:\Users\vlogp\Desktop\Jarvis Ai\Data\text\qna_Data.txt'
+    dataset_path = r'C:\Users\vlogp\Desktop\JARVIS 4.0\Data\brain_data\qna_dat.txt'
     dataset = load_dataset(dataset_path)
-
     vectorizer, X = train_tfidf_vectorizer(dataset)
     user_question = text
     answer = get_answer(user_question, vectorizer, X, dataset)
-    SPEAK(answer)
+    speak(answer)
 
-while True:
-    x = input()
-    mind(x)
